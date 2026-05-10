@@ -31,7 +31,6 @@
     position: relative;
   }
 
-  /* Animated ocean background */
   .ocean-bg {
     position: fixed;
     inset: 0;
@@ -64,7 +63,6 @@
     100% { transform: translateY(-10vh) translateX(20px); opacity: 0; }
   }
 
-  /* Caustic light rays */
   .caustics {
     position: fixed;
     inset: 0;
@@ -87,7 +85,6 @@
     50% { transform: rotate(8deg) scaleX(1.5); }
   }
 
-  /* ---- SCREENS ---- */
   .screen {
     position: relative;
     z-index: 10;
@@ -100,7 +97,6 @@
   }
   .screen.active { display: flex; }
 
-  /* ---- TITLE SCREEN ---- */
   .title-logo {
     font-family: 'Orbitron', monospace;
     font-size: clamp(2rem, 6vw, 4.5rem);
@@ -196,7 +192,6 @@
 
   .btn-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 
-  /* ---- WORD BANK EDITOR ---- */
   .editor-panel {
     background: rgba(3,15,32,0.85);
     border: 1px solid var(--ui-border);
@@ -223,9 +218,7 @@
     margin-bottom: 24px;
   }
 
-  .word-group {
-    margin-bottom: 28px;
-  }
+  .word-group { margin-bottom: 28px; }
 
   .word-group-label {
     display: flex;
@@ -330,11 +323,7 @@
   }
   .btn-add.bad-add:hover { background: rgba(255,77,109,0.25); }
 
-  /* ---- GAME SCREEN ---- */
-  #gameScreen {
-    position: relative;
-    padding: 0;
-  }
+  #gameScreen { position: relative; padding: 0; }
 
   .hud {
     position: fixed;
@@ -384,7 +373,6 @@
     letter-spacing: 0.1em;
   }
 
-  /* Game arena */
   .arena {
     position: fixed;
     inset: 0;
@@ -392,7 +380,6 @@
     z-index: 10;
   }
 
-  /* Jellyfish */
   .jellyfish {
     position: absolute;
     display: flex;
@@ -465,7 +452,6 @@
     to { transform: rotate(15deg) scaleY(1.1); }
   }
 
-  /* Feedback pop */
   .feedback-pop {
     position: fixed;
     font-family: 'Orbitron', monospace;
@@ -483,7 +469,6 @@
     100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
   }
 
-  /* End screen */
   .result-card {
     background: rgba(3,15,32,0.92);
     border: 1px solid var(--ui-border);
@@ -548,7 +533,6 @@
     color: var(--text-dim);
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(0,245,212,0.2); border-radius: 2px; }
@@ -667,8 +651,26 @@
 
 <script>
 // ---- Word Bank ----
-let goodWords = ['canyon', 'atlas', 'rival', 'apron', 'mutton', 'damsel', 'Wilson', 'atom', 'method', 'spigot', 'lesson', 'Russell', 'bacon', 'postal', 'Midas', 'final', 'Kansas', 'cotton', 'kingdom', 'petal', 'cancel', 'gallon', 'seldom', 'model', 'yodel', 'summon', 'hazel', 'Dallas', 'talon', 'tidal', 'kennel', 'label', 'mental', 'fathom', 'sandal', 'fathom', 'civil', 'random', 'vocal', 'falcom', 'Texas', 'bison', 'seldom', 'mammoth', 'chapel', 'bridal', 'common', 'prison', 'ballot', 'lemon', 'nickel', 'Hudson', 'swivel', 'gallant', 'pedal', 'infant', 'ribbon', 'Jason', 'rental', 'equal', 'level', 'pretzel', 'duffel', 'mammal', 'blossom', 'wagon', 'tunnel', 'melon', 'spinach', 'travel', 'wisdom', 'oval'];
-let badWords  = ['extend', 'kitten', 'yummy', 'floppy', 'sudden', 'exam', 'trespass', 'motto', 'traffic', 'funny', 'broken', 'optic', 'bucket', 'tactic', 'token', 'sunken', 'bulky', 'rocky', 'funny', 'excel', 'tennis', 'penny', 'except', 'messy', 'jello', 'kitty', 'annex', 'basic', 'public', 'fabric', 'civic', 'blanket', 'toxic', 'hijack', 'music', 'bronco', 'oblong', 'velvet', 'dentist', 'banquet', 'admit', 'gladly', 'campus', 'magnet', 'almost', 'victim', 'fifty', 'witness', 'dentist', 'chicken', 'ticket', 'princess', 'chunky', 'sibling', 'selfish', 'unless', 'insect', 'except', 'fancy', 'census', 'beyond', 'Latin', 'refund', 'rapid', 'tidy', 'menu', 'radish', 'exam', 'navy', 'timid', 'sinus', 'select', 'elect'];
+let goodWords = ['canyon', 'atlas', 'rival', 'apron', 'mutton', 'damsel', 'Wilson', 'atom', 'method', 'spigot', 'lesson', 'Russell', 'bacon', 'postal', 'Midas', 'final', 'Kansas', 'cotton', 'kingdom', 'petal', 'cancel', 'gallon', 'seldom', 'model', 'yodel', 'summon', 'hazel', 'Dallas', 'talon', 'tidal', 'kennel', 'label', 'mental', 'fathom', 'sandal', 'civil', 'random', 'vocal', 'Texas', 'bison', 'mammoth', 'chapel', 'bridal', 'common', 'prison', 'ballot', 'lemon', 'nickel', 'Hudson', 'swivel', 'gallant', 'pedal', 'infant', 'ribbon', 'Jason', 'rental', 'equal', 'level', 'pretzel', 'duffel', 'mammal', 'blossom', 'wagon', 'tunnel', 'melon', 'spinach', 'travel', 'wisdom', 'oval'];
+let badWords  = ['extend', 'kitten', 'yummy', 'floppy', 'sudden', 'exam', 'trespass', 'motto', 'traffic', 'funny', 'broken', 'optic', 'bucket', 'tactic', 'token', 'sunken', 'bulky', 'rocky', 'excel', 'tennis', 'penny', 'except', 'messy', 'jello', 'kitty', 'annex', 'basic', 'public', 'fabric', 'civic', 'blanket', 'toxic', 'hijack', 'music', 'bronco', 'oblong', 'velvet', 'dentist', 'banquet', 'admit', 'gladly', 'campus', 'magnet', 'almost', 'victim', 'fifty', 'witness', 'chicken', 'ticket', 'princess', 'chunky', 'sibling', 'selfish', 'unless', 'insect', 'except', 'fancy', 'census', 'beyond', 'Latin', 'refund', 'rapid', 'tidy', 'menu', 'radish', 'exam', 'navy', 'timid', 'sinus', 'select', 'elect'];
+
+// ---- Spawn ratio tracking (enforced 3 good : 2 bad per 5) ----
+// We use a shuffle-bag approach: every 5 spawns = 3 good + 2 bad, in random order
+let spawnBag = [];
+
+function refillBag() {
+  // 3 good, 2 bad — shuffled
+  spawnBag = [true, true, true, false, false];
+  for (let i = spawnBag.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [spawnBag[i], spawnBag[j]] = [spawnBag[j], spawnBag[i]];
+  }
+}
+
+function nextIsGood() {
+  if (spawnBag.length === 0) refillBag();
+  return spawnBag.pop();
+}
 
 // ---- Game State ----
 let score = 0, timeLeft = 60, streak = 0, bestStreak = 0, hits = 0, misses = 0;
@@ -756,6 +758,7 @@ function initCaustics() {
 function startGame() {
   score = 0; timeLeft = 60; streak = 0; bestStreak = 0; hits = 0; misses = 0;
   jellies = []; jellyIdCounter = 0;
+  refillBag(); // fresh bag at game start
   document.getElementById('arena').innerHTML = '';
   updateHUD();
   showScreen('gameScreen');
@@ -788,7 +791,8 @@ function clearGame() {
 }
 
 function spawnJellyfish() {
-  const isGood = Math.random() < 0.55;
+  // Use the bag to enforce exactly 2-in-5 bad word rate
+  const isGood = nextIsGood();
   const words = isGood ? goodWords : badWords;
   if (!words.length) return;
   const word = words[Math.floor(Math.random() * words.length)];
@@ -803,11 +807,8 @@ function spawnJellyfish() {
   jelly.id = `jelly-${id}`;
 
   const color = '#4da6ff';
-  const colorDim = '#1a4a8a';
-  const bellFill = 'rgba(77,166,255,0.15)';
   const bellStroke = 'rgba(77,166,255,0.7)';
 
-  // Tentacle count & sizes
   const tCount = 7 + Math.floor(Math.random()*5);
   let tentaclesHTML = '';
   for (let i=0; i<tCount; i++) {
@@ -841,7 +842,6 @@ function spawnJellyfish() {
     <div class="jelly-tentacles">${tentaclesHTML}</div>
   `;
 
-  // Random position (avoid edges)
   const x = 40 + Math.random() * (arenaW - 150);
   const y = 40 + Math.random() * (arenaH - 160);
   const floatDur = (2.5 + Math.random() * 2).toFixed(1);
@@ -854,7 +854,6 @@ function spawnJellyfish() {
     animation-delay:-${floatDelay}s;
   `;
 
-  // Lifespan
   const lifespan = 3200 + Math.random() * 1800;
 
   jelly.onclick = () => handleClick(id, isGood, jelly);
@@ -892,8 +891,8 @@ function handleClick(id, isGood, el) {
     score = Math.max(0, score - 5);
     misses++;
     streak = 0;
-    showFeedback(cx, cy - 20, '-5', '#4da6ff');
-    burstEffect(el, '#4da6ff');
+    showFeedback(cx, cy - 20, '-5', '#ff4d6d');
+    burstEffect(el, '#ff4d6d');
   }
 
   updateHUD();
