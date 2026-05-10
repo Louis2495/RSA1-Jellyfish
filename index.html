@@ -842,8 +842,36 @@ function spawnJellyfish() {
     <div class="jelly-tentacles">${tentaclesHTML}</div>
   `;
 
-  const x = 40 + Math.random() * (arenaW - 150);
-  const y = 40 + Math.random() * (arenaH - 160);
+  // Find a non-overlapping position (jellyfish footprint ~120x110px including tentacles)
+  const JELLY_W = 120;
+  const JELLY_H = 110;
+  const MIN_GAP = 20; // extra breathing room between jellies
+  const SLOT_W = JELLY_W + MIN_GAP;
+  const SLOT_H = JELLY_H + MIN_GAP;
+
+  function overlaps(cx, cy) {
+    return jellies.some(j => {
+      const jx = parseFloat(j.el.style.left);
+      const jy = parseFloat(j.el.style.top);
+      return Math.abs(cx - jx) < SLOT_W && Math.abs(cy - jy) < SLOT_H;
+    });
+  }
+
+  let x, y;
+  let placed = false;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const cx = 20 + Math.random() * (arenaW - JELLY_W - 40);
+    const cy = 20 + Math.random() * (arenaH - JELLY_H - 40);
+    if (!overlaps(cx, cy)) {
+      x = cx; y = cy; placed = true; break;
+    }
+  }
+  // Fallback: just place it if no clear spot found after 30 tries
+  if (!placed) {
+    x = 20 + Math.random() * (arenaW - JELLY_W - 40);
+    y = 20 + Math.random() * (arenaH - JELLY_H - 40);
+  }
+
   const floatDur = (2.5 + Math.random() * 2).toFixed(1);
   const floatDelay = (Math.random() * 2).toFixed(1);
 
