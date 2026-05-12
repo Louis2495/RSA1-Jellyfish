@@ -869,7 +869,7 @@ function drawMainBelt() {
 
 function drawChuteTrack() {
   const railW  = 5;
-  const chuteW = Math.round(BELT_H * 1.5); // wider chute belt
+  const chuteW = Math.round(BELT_H * 0.78); // width of the chute belt
 
   // ── Geometry ──
   // The chute starts at FORK_X on the main belt and goes:
@@ -881,7 +881,7 @@ function drawChuteTrack() {
 
   const kneeX  = FORK_X + Math.round(W * 0.11); // center-x where diagonal meets vertical
   const kneeY  = Math.round(H * 0.40);           // y where diagonal ends, vertical begins
-  const topY   = -30;                         // extends off the top of the screen
+  const topY   = CHUTE_Y;                         // very top of vertical section
   const half   = chuteW / 2;
 
   // The four "spine" points of the chute centerline:
@@ -937,13 +937,13 @@ function drawChuteTrack() {
 
   // Draw belt-segment marks along the chute path
   const segSpacing = 40;
-  // Diagonal marks use rightward scroll (same direction as main belt feed)
-  const diagOffset = (beltOffset * 0.8 % segSpacing + segSpacing) % segSpacing;
+  const offset = (beltOffset * 0.8 % segSpacing + segSpacing) % segSpacing;
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
   ctx.lineWidth = 2;
 
-  // Diagonal segment marks — perpendicular to diagonal direction
-  for (let s = -segSpacing + diagOffset; s < diagLen + segSpacing; s += segSpacing) {
+  // Diagonal segment marks (perpendicular to diagonal direction)
+  const pNx = -dNy, pNy = dNx; // along-diagonal normal
+  for (let s = -segSpacing + offset; s < diagLen + segSpacing; s += segSpacing) {
     const mx = FORK_X + (diagDX / diagLen) * s;
     const my = (BELT_Y + BELT_H/2) + (diagDY / diagLen) * s;
     ctx.beginPath();
@@ -952,15 +952,13 @@ function drawChuteTrack() {
     ctx.stroke();
   }
 
-  // Vertical segment marks — HORIZONTAL lines scrolling UPWARD
-  // beltOffset increases → subtract to make stripes move up the screen
-  const vertOffset = ((-beltOffset * 0.8) % segSpacing + segSpacing) % segSpacing;
+  // Vertical segment marks
   const vertLen = kneeY - topY;
-  for (let s = vertOffset % segSpacing; s < vertLen + segSpacing; s += segSpacing) {
+  for (let s = -segSpacing + offset; s < vertLen + segSpacing; s += segSpacing) {
     const my = kneeY - s;
     ctx.beginPath();
-    ctx.moveTo(vertL - 2, my);
-    ctx.lineTo(vertR + 2, my);
+    ctx.moveTo(vertL - 4, my);
+    ctx.lineTo(vertR + 4, my);
     ctx.stroke();
   }
 
@@ -972,21 +970,25 @@ function drawChuteTrack() {
   ctx.strokeStyle = '#6b4f1c';
   ctx.lineJoin = 'round';
 
-  // Right-side rail: fork → knee → top (off screen)
+  // Right-side rail: fork → knee → top
   ctx.beginPath();
   ctx.moveTo(diagTopR.x, diagTopR.y);
   ctx.lineTo(diagBotR.x, diagBotR.y);
   ctx.lineTo(vertR, topY);
   ctx.stroke();
 
-  // Left-side rail: fork → knee → top (off screen)
+  // Left-side rail: fork → knee → top
   ctx.beginPath();
   ctx.moveTo(diagTopL.x, diagTopL.y);
   ctx.lineTo(diagBotL.x, diagBotL.y);
   ctx.lineTo(vertL, topY);
   ctx.stroke();
 
-  // No top cap — belt continues off screen
+  // Top cap
+  ctx.beginPath();
+  ctx.moveTo(vertL, topY);
+  ctx.lineTo(vertR, topY);
+  ctx.stroke();
 
   ctx.restore();
 
@@ -1004,13 +1006,14 @@ function drawChuteTrack() {
   // ── Rollers ──
   drawRoller(FORK_X, BELT_Y + BELT_H/2, BELT_H * 0.55);   // at fork on main belt
   drawRoller(kneeX, kneeY, chuteW * 0.55);                  // at the knee/bend
+  drawRoller(kneeX, topY + chuteW * 0.3, chuteW * 0.55);   // at the top
 
   // ── Labels ──
   ctx.save();
   ctx.font = `bold 11px 'Share Tech Mono', monospace`;
   ctx.fillStyle = 'rgba(78,203,113,0.8)';
   ctx.textAlign = 'center';
-  ctx.fillText('SUFFIX CHUTE', kneeX, 16);
+  ctx.fillText('SUFFIX CHUTE', kneeX, topY - 10);
   ctx.restore();
 
   ctx.save();
