@@ -31,8 +31,7 @@ body {
   background: var(--bg);
   font-family: 'Courier Prime', monospace;
   color: var(--cream);
-  height: 100vh;
-  max-height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
   user-select: none;
 }
@@ -55,9 +54,8 @@ body::after {
 #titleScreen {
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  padding:16px 24px 20px;
-  overflow-y: auto;
+  justify-content:center;
+  padding:24px;
   background:
     radial-gradient(ellipse at 30% 60%, rgba(180,100,20,0.12) 0%, transparent 55%),
     radial-gradient(ellipse at 75% 30%, rgba(120,70,10,0.10) 0%, transparent 50%),
@@ -68,7 +66,7 @@ body::after {
   display:flex;
   flex-direction:column;
   align-items:center;
-  margin-bottom:16px;
+  margin-bottom:36px;
 }
 
 .factory-eyebrow {
@@ -108,7 +106,7 @@ body::after {
   max-width:100%;
   height:50px;
   position:relative;
-  margin-bottom:16px;
+  margin-bottom:32px;
   border-radius:6px;
   overflow:hidden;
   background: var(--belt);
@@ -158,14 +156,14 @@ body::after {
   background: var(--metal);
   border: 2px solid var(--belt-edge);
   border-radius:12px;
-  padding:20px 24px;
+  padding:28px 32px;
   width:100%;
   max-width:460px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .setup-section {
-  margin-bottom:16px;
+  margin-bottom:24px;
 }
 
 .setup-label {
@@ -623,8 +621,8 @@ function resizeCanvas() {
 function computeLayout() {
   BELT_H    = Math.round(H * 0.17);
   BELT_Y    = Math.round(H * 0.58);        // top of main belt
-  FORK_X    = Math.round(W * 0.72);        // fork on the RIGHT side
-  CHUTE_Y   = Math.round(H * 0.15);        // where suffix chute deposits packages
+  FORK_X    = Math.round(W * 0.62);        // where fork diverges
+  CHUTE_Y   = Math.round(H * 0.10);        // where suffix chute deposits packages
   PKG_W     = Math.round(Math.min(W * 0.22, 160));
   PKG_H     = Math.round(BELT_H * 0.75);
 }
@@ -647,7 +645,7 @@ function makePackage(word, hasSuffix) {
     id: ++pkgIdCounter,
     word, hasSuffix,
     phase: 'belt',
-    x: -PKG_W - 10,      // start off-screen LEFT
+    x: W + PKG_W,           // start off-screen right
     y: 0,                   // computed per-phase
     vy: 0,                  // for divert animation
     divX: 0, divY: 0,       // position when divert triggered
@@ -721,12 +719,14 @@ function update(dt) {
     if (p.flash) { p.flash.t -= dt; if (p.flash.t <= 0) p.flash = null; }
 
     if (p.phase === 'belt') {
-      p.x += beltSpeed * dt;   // move RIGHT
+      p.x -= beltSpeed * dt;
       p.y  = beltTop;
 
-      // Missed: passed the right edge without being diverted
-      if (p.x > W + 10) {
+      // Missed: slid past the left edge
+      if (p.x + PKG_W < 0) {
         if (!p.scored) {
+          // Was it a suffix word? If yes, missed means we didn't divert = wrong
+          // Was it plain? Letting it go = correct!
           if (p.hasSuffix) {
             score = Math.max(0, score - 3);
             missed++;
@@ -741,30 +741,32 @@ function update(dt) {
         updateHUD();
         continue;
       }
+
+      // Auto-judge when package passes end of belt (left edge)
     }
 
     if (p.phase === 'diverting') {
-      p.divProgress += dt * 1.8;
+      p.divProgress += dt * 1.8; // animation speed
       if (p.divProgress >= 1) {
         p.divProgress = 1;
         p.phase = 'chute';
-        p.x = FORK_X + PKG_W * 0.5;
+        p.x = FORK_X - PKG_W / 2;
         p.y = CHUTE_Y;
       } else {
+        // Bezier from (divX,divY) up to chute area
         const t = p.divProgress;
         const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-        // Bezier: from divert point, curve diagonally up-right to chute
-        const cx = FORK_X + PKG_W * 0.6;
-        const cy = p.divY - H * 0.15;
-        p.x = bezierX(p.divX, cx, FORK_X + PKG_W * 0.5, ease);
+        const cx = FORK_X - PKG_W * 0.3;
+        const cy = p.divY - H * 0.2;
+        p.x = bezierX(p.divX, cx, FORK_X - PKG_W/2, ease);
         p.y = bezierY(p.divY, cy, CHUTE_Y, ease);
       }
     }
 
     if (p.phase === 'chute') {
-      // Slide right on upper chute (after being diverted)
-      p.x += beltSpeed * 0.8 * dt;
-      if (p.x > W + PKG_W + 10) {
+      // Slide left on upper chute
+      p.x -= beltSpeed * 0.8 * dt;
+      if (p.x + PKG_W < 0) {
         packages.splice(i, 1);
         if (selectedIdx >= packages.length) selectedIdx = packages.length - 1;
       }
@@ -849,7 +851,7 @@ function drawBeltSurface(x, y, w, h, scrollOff) {
 let beltOffset = 0;
 // We update beltOffset in rAF by incrementing each frame
 function drawMainBelt() {
-  beltOffset += SPEED_PX_PER_SEC[gameSpeed] * (1/60); // scroll RIGHT
+  beltOffset -= SPEED_PX_PER_SEC[gameSpeed] * (1/60); // approximate
   drawBeltSurface(0, BELT_Y, W, BELT_H, beltOffset);
 
   // Conveyor rollers at edges
@@ -859,88 +861,47 @@ function drawMainBelt() {
 
 function drawChuteTrack() {
   const chuteH = Math.round(BELT_H * 0.82);
+  const chuteY = CHUTE_Y;
+  const chuteX = FORK_X - PKG_W * 1.5;
 
-  // ── Diagonal connector from FORK_X on main belt up to the vertical chute ──
-  // The diagonal goes from (FORK_X, BELT_Y) up-right to (FORK_X + diag offset, CHUTE_Y + chuteH)
-  const diagEndX = FORK_X + Math.round(W * 0.08);  // diagonal lands a bit right of fork
-  const diagEndY = CHUTE_Y + chuteH;               // bottom of vertical chute
+  drawBeltSurface(chuteX, chuteY, W - chuteX, chuteH, beltOffset * 0.8);
 
-  ctx.save();
+  // Roller at start of chute
+  drawRoller(chuteX + 20, chuteY + chuteH/2, chuteH * 0.55);
 
-  // Draw diagonal belt body
-  const diagAngle = Math.atan2(diagEndY - BELT_Y, diagEndX - FORK_X);
-  const diagLen = Math.hypot(diagEndX - FORK_X, diagEndY - BELT_Y);
-  ctx.translate(FORK_X, BELT_Y);
-  ctx.rotate(diagAngle);
-
-  // Draw diagonal belt strip
-  ctx.fillStyle = '#3d2e14';
-  ctx.fillRect(0, -chuteH/2, diagLen, chuteH);
-
-  // Diagonal belt segments
-  const segW = 40;
-  const off = (beltOffset * 0.8 % segW + segW) % segW;
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  for (let sx = -segW + off; sx < diagLen; sx += segW) {
-    ctx.fillRect(sx, -chuteH/2, 2, chuteH);
-  }
-
-  // Edge highlights
-  ctx.fillStyle = '#5c4520';
-  ctx.fillRect(0, -chuteH/2, diagLen, 4);
-  ctx.fillStyle = '#2a1e08';
-  ctx.fillRect(0, chuteH/2 - 4, diagLen, 4);
-
-  // Belt rails
-  ctx.fillStyle = '#6b4f1c';
-  ctx.fillRect(0, -chuteH/2 - 5, diagLen, 5);
-  ctx.fillRect(0, chuteH/2, diagLen, 5);
-
-  ctx.restore();
-
-  // ── Vertical chute on the right side ──
-  const chuteX = diagEndX;
-  const chuteTopY = CHUTE_Y;
-
-  drawBeltSurface(chuteX - chuteH/2, chuteTopY, chuteH, diagEndY - chuteTopY, beltOffset * 0.8);
-
-  // Junction roller where diagonal meets vertical chute
-  drawRoller(diagEndX, diagEndY, chuteH * 0.55);
-  // Top roller
-  drawRoller(diagEndX, chuteTopY + chuteH/2, chuteH * 0.55);
-  // Junction roller at main belt
-  drawRoller(FORK_X, BELT_Y + BELT_H/2, chuteH * 0.55);
-
-  // Chute label above the vertical section
+  // Chute label
   ctx.save();
   ctx.font = `bold 11px 'Share Tech Mono', monospace`;
-  ctx.fillStyle = 'rgba(78,203,113,0.7)';
-  ctx.textAlign = 'center';
-  ctx.fillText('SUFFIX', diagEndX, chuteTopY - 22);
-  ctx.fillText('CHUTE', diagEndX, chuteTopY - 8);
+  ctx.fillStyle = 'rgba(78,203,113,0.6)';
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText('SUFFIX CHUTE', chuteX + 28, chuteY - 10);
   ctx.restore();
 
-  // Arrow sign at fork point on main belt
+  // Vertical separator wall between the two belts
+  ctx.fillStyle = '#2e2416';
+  ctx.fillRect(FORK_X - 10, CHUTE_Y + chuteH + 5, 12, BELT_Y - CHUTE_Y - chuteH - 5);
+  // Wall highlight
+  ctx.fillStyle = '#483820';
+  ctx.fillRect(FORK_X - 10, CHUTE_Y + chuteH + 5, 2, BELT_Y - CHUTE_Y - chuteH - 5);
+
+  // Arrow sign above fork
   ctx.save();
-  ctx.font = `bold 12px 'Share Tech Mono', monospace`;
-  ctx.fillStyle = 'rgba(232,160,32,0.65)';
-  ctx.textAlign = 'center';
-  ctx.fillText('↗ SUFFIX', FORK_X, BELT_Y - 14);
+  ctx.font = `bold 13px 'Share Tech Mono', monospace`;
+  ctx.fillStyle = 'rgba(232,160,32,0.5)';
+  ctx.fillText('▲ SUFFIX', FORK_X - 40, BELT_Y - 16);
   ctx.restore();
 }
 
-
 function drawForkArrow() {
-  // Animated arrow pointing up-right at fork
+  // Animated arrow pointing up at fork
   const t = (Date.now() % 1000) / 1000;
   const bounce = Math.sin(t * Math.PI * 2) * 4;
-  const ax = FORK_X;
-  const ay = BELT_Y - 44 + bounce;
+  const ax = FORK_X - PKG_W * 0.15;
+  const ay = BELT_Y - 34 + bounce;
 
   ctx.save();
   ctx.globalAlpha = 0.55 + Math.sin(t * Math.PI * 2) * 0.2;
   ctx.fillStyle = '#e8a020';
-  // Draw a diagonal up-right arrow
   ctx.beginPath();
   ctx.moveTo(ax, ay);
   ctx.lineTo(ax - 14, ay + 18);
@@ -1025,22 +986,11 @@ function drawBox(p, isSelected) {
   ctx.fillRect(x + r, y + h*0.32, w - r*2, 6);
   ctx.fillRect(x + r, y + h*0.62, w - r*2, 6);
 
-  // Word text — draw a dark backing strip first for contrast
+  // Word text
   ctx.shadowBlur = 0;
-  const fontSize = Math.max(11, Math.min(14, PKG_W / (p.word.length * 0.72)));
-  ctx.font = `bold ${fontSize}px 'Black Ops One', sans-serif`;
+  ctx.font = `bold ${Math.max(11, Math.min(14, PKG_W / (p.word.length * 0.72)))}px 'Black Ops One', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const textW = ctx.measureText(p.word).width;
-  const padX = 8, padY = 5;
-  const tx = x + w/2 - textW/2 - padX;
-  const ty = y + h/2 - fontSize/2 - padY;
-  // Dark backing panel
-  ctx.fillStyle = p.flash
-    ? (p.flash.color === 'green' ? 'rgba(10,50,10,0.75)' : 'rgba(60,10,10,0.75)')
-    : 'rgba(10,8,4,0.68)';
-  roundRect(ctx, tx, ty, textW + padX*2, fontSize + padY*2, 3);
-  ctx.fill();
 
   // Text glow for selected
   if (isSelected) {
@@ -1049,20 +999,20 @@ function drawBox(p, isSelected) {
   }
 
   ctx.fillStyle = p.flash
-    ? (p.flash.color === 'green' ? '#b0ffb0' : '#ffb0b0')
-    : '#fff5cc';
+    ? (p.flash.color === 'green' ? '#90f090' : '#f09090')
+    : '#f5d880';
   ctx.fillText(p.word, x + w/2, y + h/2);
 
   ctx.restore();
 }
 
 function drawLabels() {
-  // Main belt label (left side, showing direction)
+  // Main belt label (right side)
   ctx.save();
   ctx.font = `bold 11px 'Share Tech Mono', monospace`;
   ctx.fillStyle = 'rgba(200,140,50,0.45)';
-  ctx.textAlign = 'left';
-  ctx.fillText('→ PLAIN BELT', 16, BELT_Y + BELT_H + 18);
+  ctx.textAlign = 'right';
+  ctx.fillText('PLAIN BELT →', W - 16, BELT_Y + BELT_H + 18);
   ctx.restore();
 }
 
@@ -1128,7 +1078,7 @@ document.addEventListener('keydown', e => {
   if (!beltPkgs.length) return;
 
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-    // Select next (rightmost = furthest along belt)
+    // Select next (rightmost = newest)
     selectedIdx = Math.min(selectedIdx + 1, packages.length - 1);
     e.preventDefault();
   } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
@@ -1141,7 +1091,7 @@ document.addEventListener('keydown', e => {
     if (selectedIdx >= 0 && selectedIdx < packages.length && packages[selectedIdx].phase === 'belt') {
       target = packages[selectedIdx];
     } else {
-      // find rightmost belt package (furthest along)
+      // find rightmost belt package
       target = beltPkgs.reduce((a,b) => b.x > a.x ? b : a);
     }
     if (target) divertPackage(target);
@@ -1224,7 +1174,7 @@ spawnPackage();
 function idleDraw() {
   if (!document.getElementById('gameScreen').classList.contains('active')) {
     resizeCanvas();
-    beltOffset += 1.2;
+    beltOffset -= 1.2;
     draw();
     requestAnimationFrame(idleDraw);
   }
