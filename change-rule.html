@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change Rule — RSA Learning Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Courier+Prime:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #1a1208;
+  --bg2:        #231a0a;
+  --belt:       #3d2e14;
+  --belt-hi:    #5c4520;
+  --belt-edge:  #6b4f1c;
+  --metal:      #2e2416;
+  --metal-hi:   #483820;
+  --amber:      #e8a020;
+  --amber-dim:  #a06010;
+  --amber-glow: rgba(232,160,32,0.25);
+  --green:      #4ecb71;
+  --red:        #e84040;
+  --cream:      #f0e0b8;
+  --cream-dim:  #a89060;
+  --shadow:     rgba(0,0,0,0.6);
+  --rivet:      #6a5530;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  font-family: 'Courier Prime', monospace;
+  color: var(--cream);
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Grain overlay ── */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:999; opacity:0.5;
+}
+
+/* ── Screens ── */
+.screen { display:none; position:fixed; inset:0; z-index:10; }
+.screen.active { display:flex; }
+
+/* ══════════════════════════════════════════
+   TITLE / SETUP SCREEN
+══════════════════════════════════════════ */
+#titleScreen {
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:
+    radial-gradient(ellipse at 30% 60%, rgba(180,100,20,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(120,70,10,0.10) 0%, transparent 50%),
+    linear-gradient(160deg, #1a1208 0%, #2a1e08 50%, #1a1208 100%);
+}
+
+.factory-header {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:36px;
+}
+
+.factory-eyebrow {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.65rem;
+  letter-spacing:0.5em;
+  text-transform:uppercase;
+  color: var(--amber-dim);
+  margin-bottom:10px;
+}
+
+.factory-title {
+  font-family:'Black Ops One', sans-serif;
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  line-height:1;
+  text-align:center;
+  color: var(--amber);
+  text-shadow:
+    0 0 30px rgba(232,160,32,0.5),
+    0 2px 0 rgba(0,0,0,0.8),
+    0 4px 0 rgba(0,0,0,0.4);
+  letter-spacing:0.04em;
+}
+
+.factory-sub {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.8rem;
+  letter-spacing:0.2em;
+  color: var(--cream-dim);
+  margin-top:8px;
+  text-align:center;
+}
+
+/* Mini conveyor preview */
+.belt-preview {
+  width:360px;
+  max-width:100%;
+  height:50px;
+  position:relative;
+  margin-bottom:32px;
+  border-radius:6px;
+  overflow:hidden;
+  background: var(--belt);
+  border-top: 3px solid var(--belt-edge);
+  border-bottom: 3px solid var(--belt-edge);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.belt-preview::before {
+  content:'';
+  position:absolute; inset:0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 38px,
+    rgba(0,0,0,0.25) 38px,
+    rgba(0,0,0,0.25) 40px
+  );
+  animation: beltScroll 1.2s linear infinite;
+}
+.preview-box {
+  position:absolute;
+  top:6px; height:38px;
+  padding:0 14px;
+  border-radius:4px;
+  font-family:'Black Ops One', sans-serif;
+  font-size:0.9rem;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  animation: previewSlide 4s linear infinite;
+  white-space:nowrap;
+}
+.preview-box.suffix {
+  background:#5a8a3a; border:2px solid #7ab848; color:#d4f0b0;
+}
+.preview-box.plain {
+  background:#8a6030; border:2px solid #c0903a; color:#f5d080;
+  animation-delay: -2s;
+}
+
+@keyframes previewSlide {
+  0%   { left: 110%; }
+  100% { left: -40%; }
+}
+
+/* Setup card */
+.setup-card {
+  background: var(--metal);
+  border: 2px solid var(--belt-edge);
+  border-radius:12px;
+  padding:28px 32px;
+  width:100%;
+  max-width:460px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.setup-section {
+  margin-bottom:24px;
+}
+
+.setup-label {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.68rem;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color: var(--amber-dim);
+  margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.setup-label::after {
+  content:'';
+  flex:1; height:1px;
+  background: linear-gradient(90deg, var(--belt-edge), transparent);
+}
+
+/* Speed slider */
+.speed-row {
+  display:flex; align-items:center; gap:14px;
+}
+.speed-label-lo, .speed-label-hi {
+  font-size:0.72rem;
+  color: var(--cream-dim);
+  letter-spacing:0.05em;
+  white-space:nowrap;
+}
+input[type=range] {
+  -webkit-appearance:none;
+  flex:1; height:6px;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+  border-radius:3px; outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:20px; height:20px;
+  border-radius:50%;
+  background: var(--amber);
+  box-shadow: 0 0 10px rgba(232,160,32,0.6);
+  cursor:pointer;
+  transition: box-shadow 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 18px rgba(232,160,32,0.9);
+}
+
+.speed-display {
+  font-family:'Black Ops One', sans-serif;
+  font-size:1rem;
+  color: var(--amber);
+  min-width:70px;
+  text-align:center;
+}
+
+/* Instructions */
+.instructions {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.instr-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius:8px;
+  padding:10px 12px;
+  display:flex; align-items:flex-start; gap:10px;
+  font-size:0.82rem;
+  line-height:1.5;
+  color: var(--cream-dim);
+}
+.instr-key {
+  font-family:'Black Ops One', sans-serif;
+  font-size:0.75rem;
+  background: var(--belt);
+  border: 1px solid var(--belt-edge);
+  border-radius:5px;
+  padding:3px 7px;
+  color: var(--amber);
+  white-space:nowrap;
+  flex-shrink:0;
+  margin-top:1px;
+}
+
+/* Scoring info */
+.score-info {
+  display:flex; gap:10px;
+}
+.score-item {
+  flex:1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius:8px;
+  padding:10px 12px;
+  text-align:center;
+  font-size:0.8rem;
+  color: var(--cream-dim);
+  line-height:1.5;
+}
+.score-item strong { display:block; font-family:'Black Ops One', sans-serif; font-size:1.1rem; }
+.score-item.pos strong { color: var(--green); }
+.score-item.neg strong { color: var(--red); }
+
+/* Start button */
+.btn-start {
+  width:100%;
+  margin-top:4px;
+  padding:14px;
+  font-family:'Black Ops One', sans-serif;
+  font-size:1.1rem;
+  letter-spacing:0.12em;
+  background: linear-gradient(135deg, #c07818, #e8a020);
+  color: #1a1208;
+  border:none; border-radius:8px; cursor:pointer;
+  box-shadow: 0 0 20px rgba(232,160,32,0.35), 0 4px 0 rgba(0,0,0,0.5);
+  transition: all 0.15s;
+  text-transform:uppercase;
+}
+.btn-start:hover {
+  transform:translateY(-2px);
+  box-shadow: 0 0 35px rgba(232,160,32,0.55), 0 6px 0 rgba(0,0,0,0.5);
+}
+.btn-start:active { transform:translateY(1px); }
+
+/* back nav */
+.back-nav {
+  position:fixed; top:14px; left:16px; z-index:500;
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase;
+  color: var(--amber-dim); text-decoration:none;
+  display:flex; align-items:center; gap:7px;
+  padding:6px 12px;
+  border:1px solid rgba(232,160,32,0.2); border-radius:4px;
+  background: rgba(26,18,8,0.8); backdrop-filter:blur(6px);
+  transition:all 0.2s;
+}
+.back-nav:hover { color:var(--amber); border-color:rgba(232,160,32,0.5); }
+
+/* ══════════════════════════════════════════
+   GAME SCREEN
+══════════════════════════════════════════ */
+#gameScreen {
+  flex-direction:column;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(140,80,10,0.12) 0%, transparent 50%),
+    linear-gradient(180deg, #1a1208 0%, #221908 100%);
+}
+
+/* HUD */
+.hud {
+  height:54px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px;
+  background: var(--metal);
+  border-bottom: 2px solid var(--belt-edge);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.5);
+  flex-shrink:0;
+  position:relative; z-index:50;
+}
+.hud-group { display:flex; flex-direction:column; align-items:center; min-width:90px; }
+.hud-lbl {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.55rem; letter-spacing:0.25em; text-transform:uppercase;
+  color: var(--amber-dim); margin-bottom:2px;
+}
+.hud-val {
+  font-family:'Black Ops One', sans-serif;
+  font-size:1.3rem; color: var(--amber);
+  text-shadow: 0 0 10px rgba(232,160,32,0.4);
+}
+.hud-val.urgent { color:var(--red); animation:urgentPulse 0.5s infinite alternate; }
+@keyframes urgentPulse { from{opacity:1} to{opacity:0.4} }
+
+.hud-feedback {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.75rem;
+  letter-spacing:0.1em;
+  min-height:18px;
+  text-align:center;
+}
+
+/* Warehouse canvas area */
+.warehouse {
+  flex:1;
+  position:relative;
+  overflow:hidden;
+}
+
+canvas#gameCanvas {
+  display:block;
+  width:100%; height:100%;
+}
+
+/* Feedback pops */
+.feedback-pop {
+  position:fixed;
+  font-family:'Black Ops One', sans-serif;
+  font-size:1.6rem;
+  pointer-events:none;
+  z-index:300;
+  animation:popUp 0.8s ease-out forwards;
+  text-shadow: 0 0 20px currentColor;
+  transform:translateX(-50%);
+}
+@keyframes popUp {
+  0%   { opacity:1; transform:translateX(-50%) translateY(0) scale(0.7); }
+  25%  { transform:translateX(-50%) translateY(-20px) scale(1.2); }
+  100% { opacity:0; transform:translateX(-50%) translateY(-70px) scale(0.9); }
+}
+
+/* ══════════════════════════════════════════
+   END SCREEN
+══════════════════════════════════════════ */
+#endScreen {
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background: rgba(10,8,4,0.92);
+  backdrop-filter:blur(8px);
+}
+
+.result-card {
+  background: var(--metal);
+  border:2px solid var(--belt-edge);
+  border-radius:16px;
+  padding:40px 48px;
+  max-width:420px; width:100%;
+  text-align:center;
+  box-shadow: 0 0 60px rgba(232,160,32,0.15);
+}
+
+.result-heading {
+  font-family:'Share Tech Mono', monospace;
+  font-size:0.7rem; letter-spacing:0.35em; text-transform:uppercase;
+  color: var(--amber-dim); margin-bottom:8px;
+}
+
+.result-score {
+  font-family:'Black Ops One', sans-serif;
+  font-size:5rem; line-height:1;
+  color: var(--amber);
+  text-shadow: 0 0 40px rgba(232,160,32,0.5);
+  margin-bottom:6px;
+}
+
+.result-grade {
+  font-size:1rem; color:var(--green); margin-bottom:28px;
+}
+
+.result-stats {
+  display:flex; gap:24px; justify-content:center; margin-bottom:28px;
+}
+.r-stat { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.r-stat-val {
+  font-family:'Black Ops One', sans-serif; font-size:1.6rem;
+}
+.r-stat-lbl {
+  font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase;
+  color:var(--cream-dim);
+}
+
+.btn-row { display:flex; gap:12px; justify-content:center; }
+
+.btn {
+  font-family:'Black Ops One', sans-serif;
+  font-size:0.85rem; letter-spacing:0.1em; text-transform:uppercase;
+  padding:12px 28px; border:none; border-radius:6px; cursor:pointer;
+  transition:all 0.15s;
+}
+.btn-primary {
+  background:linear-gradient(135deg,#c07818,#e8a020);
+  color:#1a1208;
+  box-shadow:0 0 16px rgba(232,160,32,0.3), 0 3px 0 rgba(0,0,0,0.4);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 28px rgba(232,160,32,0.5), 0 5px 0 rgba(0,0,0,0.4); }
+.btn-secondary {
+  background:transparent; color:var(--cream-dim);
+  border:1px solid rgba(255,255,255,0.15);
+}
+.btn-secondary:hover { background:rgba(255,255,255,0.06); color:var(--cream); }
+
+@keyframes beltScroll {
+  from { background-position: 0 0; }
+  to   { background-position: 40px 0; }
+}
+</style>
+</head>
+<body>
+
+<a class="back-nav" href="index.html">← All Games</a>
+
+<!-- ══ TITLE SCREEN ══ -->
+<div class="screen active" id="titleScreen">
+  <div class="factory-header">
+    <div class="factory-eyebrow">RSA Learning Games</div>
+    <div class="factory-title">CHANGE<br>RULE</div>
+    <div class="factory-sub">Sort the packages — suffix or plain?</div>
+  </div>
+
+  <div class="belt-preview">
+    <div class="preview-box suffix">playing ↑</div>
+    <div class="preview-box plain">river →</div>
+  </div>
+
+  <div class="setup-card">
+
+    <div class="setup-section">
+      <div class="setup-label">Belt Speed</div>
+      <div class="speed-row">
+        <span class="speed-label-lo">Slow</span>
+        <input type="range" id="speedSlider" min="1" max="5" value="2" step="1">
+        <span class="speed-label-hi">Fast</span>
+        <span class="speed-display" id="speedDisplay">Medium</span>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-label">Controls</div>
+      <div class="instructions">
+        <div class="instr-item"><span class="instr-key">CLICK</span>Divert the package up the suffix chute</div>
+        <div class="instr-item"><span class="instr-key">↑ / W</span>Divert the highlighted package</div>
+        <div class="instr-item"><span class="instr-key">← →</span>Select previous / next package</div>
+        <div class="instr-item"><span class="instr-key">SPACE</span>Divert selected package</div>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-label">Scoring</div>
+      <div class="score-info">
+        <div class="score-item pos"><strong>+10</strong>Correct sort</div>
+        <div class="score-item neg"><strong>−5</strong>Wrong sort</div>
+        <div class="score-item neg"><strong>−3</strong>Missed package</div>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="startGame()">▶ START SORTING</button>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div class="screen" id="gameScreen">
+  <div class="hud">
+    <div class="hud-group">
+      <div class="hud-lbl">Score</div>
+      <div class="hud-val" id="scoreDisplay">0</div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-feedback" id="hudFeedback"></div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-lbl">Time</div>
+      <div class="hud-val" id="timerDisplay">90</div>
+    </div>
+  </div>
+  <div class="warehouse">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+</div>
+
+<!-- ══ END SCREEN ══ -->
+<div class="screen" id="endScreen">
+  <div class="result-card">
+    <div class="result-heading">Shift Complete</div>
+    <div class="result-score" id="finalScore">0</div>
+    <div class="result-grade" id="finalGrade"></div>
+    <div class="result-stats">
+      <div class="r-stat">
+        <div class="r-stat-val" id="statCorrect" style="color:var(--green)">0</div>
+        <div class="r-stat-lbl">Correct</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-val" id="statWrong" style="color:var(--red)">0</div>
+        <div class="r-stat-lbl">Wrong</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-val" id="statMissed" style="color:var(--amber-dim)">0</div>
+        <div class="r-stat-lbl">Missed</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goTitle()">Menu</button>
+      <button class="btn btn-primary" onclick="startGame()">▶ Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  WORD BANK
+// ══════════════════════════════════════════
+const suffixWords = [
+  // -ing
+  'playing','running','jumping','fishing','singing','dancing','helping','reading',
+  'writing','baking','hiking','riding','smiling','hoping','making','coming',
+  // -ed
+  'jumped','played','called','painted','smiled','baked','hiked','hoped',
+  'started','waited','lifted','looked','picked','fixed','walked','talked',
+  // -er / -est
+  'faster','biggest','runner','helper','taller','colder','warmer','louder',
+  'darker','cleaner','stronger','brightest','quickest','longest',
+  // -ful / -less
+  'helpful','hopeful','joyful','thankful','fearful','careful','restless','homeless',
+  'endless','careless','useless','hopeless','helpless',
+  // -ness / -ment
+  'kindness','darkness','sadness','goodness','fitness','movement','payment','treatment',
+  // -ly
+  'quickly','slowly','loudly','softly','gladly','bravely','calmly','clearly',
+  // -tion / -sion
+  'action','station','nation','mention','fiction','motion','caution','fraction',
+];
+
+const plainWords = [
+  'river','tiger','ladder','butter','pepper','summer','winter','silver',
+  'corner','center','border','number','finger','sister','brother','mother',
+  'father','flower','answer','dinner','mirror','pillow','window','cotton',
+  'garden','basket','castle','lesson','button','rocket','jacket','pocket',
+  'ticket','blanket','market','planet','rabbit','insect','muffin','cabin',
+  'medal','petal','metal','pedal','total','local','vocal','vital',
+  'camel','panel','model','novel','towel','level','travel','gravel',
+  'seven','raven','driven','frozen','broken','stolen','spoken','woken',
+];
+
+// ══════════════════════════════════════════
+//  SPEED CONFIG
+// ══════════════════════════════════════════
+const SPEED_LABELS = ['Slowpoke','Slow','Medium','Fast','Turbo'];
+const SPEED_PX_PER_SEC = [55, 85, 130, 185, 250]; // pixels/sec on belt
+const SPEED_SPAWN_MS   = [3800, 2900, 2200, 1700, 1300];
+
+let gameSpeed = 2; // index
+
+document.getElementById('speedSlider').addEventListener('input', function() {
+  gameSpeed = parseInt(this.value) - 1;
+  document.getElementById('speedDisplay').textContent = SPEED_LABELS[gameSpeed];
+});
+document.getElementById('speedDisplay').textContent = SPEED_LABELS[gameSpeed];
+
+// ══════════════════════════════════════════
+//  CANVAS + LAYOUT
+// ══════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+// Layout constants (computed after resize)
+let BELT_Y, BELT_H, FORK_X, FORK_ANGLE, CHUTE_Y, PKG_W, PKG_H;
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = canvas.width  = rect.width;
+  H = canvas.height = rect.height;
+  computeLayout();
+}
+
+function computeLayout() {
+  BELT_H    = Math.round(H * 0.17);
+  BELT_Y    = Math.round(H * 0.58);        // top of main belt
+  FORK_X    = Math.round(W * 0.62);        // where fork diverges
+  CHUTE_Y   = Math.round(H * 0.10);        // where suffix chute deposits packages
+  PKG_W     = Math.round(Math.min(W * 0.22, 160));
+  PKG_H     = Math.round(BELT_H * 0.75);
+}
+
+window.addEventListener('resize', () => { resizeCanvas(); });
+
+// ══════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════
+let score = 0, timeLeft = 90, correct = 0, wrong = 0, missed = 0;
+let gameTimer = null, spawnTimer = null, rafId = null;
+let lastTime = 0;
+let packages = [];
+let pkgIdCounter = 0;
+let selectedIdx = -1; // keyboard selection
+
+// Package phases: 'belt' | 'diverting' | 'chute' | 'done'
+function makePackage(word, hasSuffix) {
+  return {
+    id: ++pkgIdCounter,
+    word, hasSuffix,
+    phase: 'belt',
+    x: W + PKG_W,           // start off-screen right
+    y: 0,                   // computed per-phase
+    vy: 0,                  // for divert animation
+    divX: 0, divY: 0,       // position when divert triggered
+    divProgress: 0,
+    flash: null,             // { color, t }
+    scored: false,
+  };
+}
+
+function shufflePick(arr, n) {
+  const a = [...arr].sort(() => Math.random() - 0.5);
+  return a.slice(0, n);
+}
+
+// ══════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════
+function startGame() {
+  showScreen('gameScreen');
+  resizeCanvas();
+  score = 0; timeLeft = 90; correct = 0; wrong = 0; missed = 0;
+  packages = []; pkgIdCounter = 0; selectedIdx = -1;
+  updateHUD();
+
+  if (rafId) cancelAnimationFrame(rafId);
+  clearInterval(gameTimer);
+  clearTimeout(spawnTimer);
+
+  gameTimer = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+
+  scheduleSpawn();
+  lastTime = performance.now();
+  rafId = requestAnimationFrame(gameLoop);
+}
+
+function scheduleSpawn() {
+  const delay = SPEED_SPAWN_MS[gameSpeed] * (0.85 + Math.random() * 0.3);
+  spawnTimer = setTimeout(() => {
+    if (timeLeft > 0) {
+      spawnPackage();
+      scheduleSpawn();
+    }
+  }, delay);
+}
+
+function spawnPackage() {
+  const useSuffix = Math.random() < 0.5;
+  const pool = useSuffix ? suffixWords : plainWords;
+  const word = pool[Math.floor(Math.random() * pool.length)];
+  packages.push(makePackage(word, useSuffix));
+}
+
+function gameLoop(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.08); // seconds, capped
+  lastTime = ts;
+  update(dt);
+  draw();
+  if (timeLeft > 0) rafId = requestAnimationFrame(gameLoop);
+}
+
+function update(dt) {
+  const beltSpeed = SPEED_PX_PER_SEC[gameSpeed];
+  const beltTop   = BELT_Y + (BELT_H - PKG_H) / 2;
+
+  for (let i = packages.length - 1; i >= 0; i--) {
+    const p = packages[i];
+    if (p.flash) { p.flash.t -= dt; if (p.flash.t <= 0) p.flash = null; }
+
+    if (p.phase === 'belt') {
+      p.x -= beltSpeed * dt;
+      p.y  = beltTop;
+
+      // Missed: slid past the left edge
+      if (p.x + PKG_W < 0) {
+        if (!p.scored) {
+          // Was it a suffix word? If yes, missed means we didn't divert = wrong
+          // Was it plain? Letting it go = correct!
+          if (p.hasSuffix) {
+            score = Math.max(0, score - 3);
+            missed++;
+          } else {
+            score += 10;
+            correct++;
+          }
+          p.scored = true;
+        }
+        packages.splice(i, 1);
+        if (selectedIdx >= packages.length) selectedIdx = packages.length - 1;
+        updateHUD();
+        continue;
+      }
+
+      // Auto-judge when package passes end of belt (left edge)
+    }
+
+    if (p.phase === 'diverting') {
+      p.divProgress += dt * 1.8; // animation speed
+      if (p.divProgress >= 1) {
+        p.divProgress = 1;
+        p.phase = 'chute';
+        p.x = FORK_X - PKG_W / 2;
+        p.y = CHUTE_Y;
+      } else {
+        // Bezier from (divX,divY) up to chute area
+        const t = p.divProgress;
+        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        const cx = FORK_X - PKG_W * 0.3;
+        const cy = p.divY - H * 0.2;
+        p.x = bezierX(p.divX, cx, FORK_X - PKG_W/2, ease);
+        p.y = bezierY(p.divY, cy, CHUTE_Y, ease);
+      }
+    }
+
+    if (p.phase === 'chute') {
+      // Slide left on upper chute
+      p.x -= beltSpeed * 0.8 * dt;
+      if (p.x + PKG_W < 0) {
+        packages.splice(i, 1);
+        if (selectedIdx >= packages.length) selectedIdx = packages.length - 1;
+      }
+    }
+  }
+}
+
+function bezierX(p0, p1, p2, t) {
+  return (1-t)*(1-t)*p0 + 2*(1-t)*t*p1 + t*t*p2;
+}
+function bezierY(p0, p1, p2, t) {
+  return (1-t)*(1-t)*p0 + 2*(1-t)*t*p1 + t*t*p2;
+}
+
+// ══════════════════════════════════════════
+//  DRAW
+// ══════════════════════════════════════════
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  drawBackground();
+  drawChuteTrack();
+  drawMainBelt();
+  drawForkArrow();
+  drawPackages();
+  drawLabels();
+}
+
+function drawBackground() {
+  // Dark factory floor
+  ctx.fillStyle = '#1a1208';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid lines (floor tiles)
+  ctx.strokeStyle = 'rgba(255,200,100,0.03)';
+  ctx.lineWidth = 1;
+  const grid = 60;
+  for (let x = 0; x < W; x += grid) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += grid) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Ambient glow under belt
+  const grd = ctx.createRadialGradient(W*0.4, BELT_Y + BELT_H, 0, W*0.4, BELT_Y + BELT_H, W*0.5);
+  grd.addColorStop(0, 'rgba(200,120,20,0.07)');
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawBeltSurface(x, y, w, h, scrollOff) {
+  // Belt base
+  ctx.fillStyle = '#3d2e14';
+  ctx.fillRect(x, y, w, h);
+
+  // Belt segments
+  const segW = 40;
+  const off = (scrollOff % segW + segW) % segW;
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  for (let sx = x - segW + off; sx < x + w; sx += segW) {
+    ctx.fillRect(sx, y, 2, h);
+  }
+
+  // Edge highlights
+  ctx.fillStyle = '#5c4520';
+  ctx.fillRect(x, y, w, 4);
+  ctx.fillStyle = '#2a1e08';
+  ctx.fillRect(x, y + h - 4, w, 4);
+
+  // Belt borders
+  ctx.fillStyle = '#6b4f1c';
+  ctx.fillRect(x, y - 5,     w, 5);
+  ctx.fillRect(x, y + h,     w, 5);
+
+  // Rivets on edge rails
+  ctx.fillStyle = '#8a6030';
+  const rivetSpacing = 60;
+  for (let rx = x + 20; rx < x + w; rx += rivetSpacing) {
+    drawRivet(rx, y - 2.5);
+    drawRivet(rx, y + h + 2.5);
+  }
+}
+
+let beltOffset = 0;
+// We update beltOffset in rAF by incrementing each frame
+function drawMainBelt() {
+  beltOffset -= SPEED_PX_PER_SEC[gameSpeed] * (1/60); // approximate
+  drawBeltSurface(0, BELT_Y, W, BELT_H, beltOffset);
+
+  // Conveyor rollers at edges
+  drawRoller(20,         BELT_Y + BELT_H / 2, BELT_H * 0.55);
+  drawRoller(W - 20,     BELT_Y + BELT_H / 2, BELT_H * 0.55);
+}
+
+function drawChuteTrack() {
+  const chuteH = Math.round(BELT_H * 0.82);
+  const chuteY = CHUTE_Y;
+  const chuteX = FORK_X - PKG_W * 1.5;
+
+  drawBeltSurface(chuteX, chuteY, W - chuteX, chuteH, beltOffset * 0.8);
+
+  // Roller at start of chute
+  drawRoller(chuteX + 20, chuteY + chuteH/2, chuteH * 0.55);
+
+  // Chute label
+  ctx.save();
+  ctx.font = `bold 11px 'Share Tech Mono', monospace`;
+  ctx.fillStyle = 'rgba(78,203,113,0.6)';
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText('SUFFIX CHUTE', chuteX + 28, chuteY - 10);
+  ctx.restore();
+
+  // Vertical separator wall between the two belts
+  ctx.fillStyle = '#2e2416';
+  ctx.fillRect(FORK_X - 10, CHUTE_Y + chuteH + 5, 12, BELT_Y - CHUTE_Y - chuteH - 5);
+  // Wall highlight
+  ctx.fillStyle = '#483820';
+  ctx.fillRect(FORK_X - 10, CHUTE_Y + chuteH + 5, 2, BELT_Y - CHUTE_Y - chuteH - 5);
+
+  // Arrow sign above fork
+  ctx.save();
+  ctx.font = `bold 13px 'Share Tech Mono', monospace`;
+  ctx.fillStyle = 'rgba(232,160,32,0.5)';
+  ctx.fillText('▲ SUFFIX', FORK_X - 40, BELT_Y - 16);
+  ctx.restore();
+}
+
+function drawForkArrow() {
+  // Animated arrow pointing up at fork
+  const t = (Date.now() % 1000) / 1000;
+  const bounce = Math.sin(t * Math.PI * 2) * 4;
+  const ax = FORK_X - PKG_W * 0.15;
+  const ay = BELT_Y - 34 + bounce;
+
+  ctx.save();
+  ctx.globalAlpha = 0.55 + Math.sin(t * Math.PI * 2) * 0.2;
+  ctx.fillStyle = '#e8a020';
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax - 14, ay + 18);
+  ctx.lineTo(ax - 6, ay + 18);
+  ctx.lineTo(ax - 6, ay + 32);
+  ctx.lineTo(ax + 6, ay + 32);
+  ctx.lineTo(ax + 6, ay + 18);
+  ctx.lineTo(ax + 14, ay + 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawRivet(x, y) {
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#8a6030';
+  ctx.fill();
+  ctx.strokeStyle = '#4a3010';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+}
+
+function drawRoller(x, y, diameter) {
+  ctx.beginPath();
+  ctx.arc(x, y, diameter/2, 0, Math.PI*2);
+  const g = ctx.createRadialGradient(x-diameter*0.1, y-diameter*0.15, 0, x, y, diameter/2);
+  g.addColorStop(0, '#7a5a28');
+  g.addColorStop(1, '#2e2010');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = '#5a4018';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Axle
+  ctx.beginPath();
+  ctx.arc(x, y, diameter*0.15, 0, Math.PI*2);
+  ctx.fillStyle = '#4a3810';
+  ctx.fill();
+}
+
+function drawPackages() {
+  packages.forEach((p, i) => {
+    const isSelected = (i === selectedIdx);
+    drawBox(p, isSelected);
+  });
+}
+
+function drawBox(p, isSelected) {
+  const x = p.x, y = p.y;
+  const w = PKG_W, h = PKG_H;
+  const r = 5;
+
+  ctx.save();
+
+  // Drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 5;
+
+  // Box body
+  let bgColor = '#8a6030';
+  if (p.flash) {
+    bgColor = p.flash.color === 'green'
+      ? `rgba(60,140,60,${0.5 + p.flash.t * 2})`
+      : `rgba(180,40,40,${0.5 + p.flash.t * 2})`;
+  }
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+  // Box edge highlight (top)
+  roundRect(ctx, x, y, w, h, r);
+  ctx.strokeStyle = isSelected ? '#ffd166' : '#c09050';
+  ctx.lineWidth = isSelected ? 3 : 1.5;
+  ctx.stroke();
+
+  // Tape strips (horizontal)
+  ctx.fillStyle = 'rgba(220,180,100,0.25)';
+  ctx.fillRect(x + r, y + h*0.32, w - r*2, 6);
+  ctx.fillRect(x + r, y + h*0.62, w - r*2, 6);
+
+  // Word text
+  ctx.shadowBlur = 0;
+  ctx.font = `bold ${Math.max(11, Math.min(14, PKG_W / (p.word.length * 0.72)))}px 'Black Ops One', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Text glow for selected
+  if (isSelected) {
+    ctx.shadowColor = '#ffd166';
+    ctx.shadowBlur = 8;
+  }
+
+  ctx.fillStyle = p.flash
+    ? (p.flash.color === 'green' ? '#90f090' : '#f09090')
+    : '#f5d880';
+  ctx.fillText(p.word, x + w/2, y + h/2);
+
+  ctx.restore();
+}
+
+function drawLabels() {
+  // Main belt label (right side)
+  ctx.save();
+  ctx.font = `bold 11px 'Share Tech Mono', monospace`;
+  ctx.fillStyle = 'rgba(200,140,50,0.45)';
+  ctx.textAlign = 'right';
+  ctx.fillText('PLAIN BELT →', W - 16, BELT_Y + BELT_H + 18);
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y,   x+w, y+r,   r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h);
+  ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r);
+  ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+// ══════════════════════════════════════════
+//  INTERACTION
+// ══════════════════════════════════════════
+function divertPackage(pkg) {
+  if (pkg.phase !== 'belt' || pkg.scored) return;
+  pkg.divX = pkg.x;
+  pkg.divY = pkg.y;
+  pkg.divProgress = 0;
+  pkg.phase = 'diverting';
+
+  if (pkg.hasSuffix) {
+    score += 10; correct++;
+    pkg.flash = { color: 'green', t: 0.5 };
+    showFeedback(pkg.x + PKG_W/2, pkg.y - 10, '+10', '#4ecb71');
+  } else {
+    score = Math.max(0, score - 5); wrong++;
+    pkg.flash = { color: 'red', t: 0.5 };
+    showFeedback(pkg.x + PKG_W/2, pkg.y - 10, '−5  not a suffix!', '#e84040');
+  }
+  pkg.scored = true;
+  updateHUD();
+}
+
+// Click
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top)  * (H / rect.height);
+
+  for (let i = packages.length - 1; i >= 0; i--) {
+    const p = packages[i];
+    if (p.phase !== 'belt') continue;
+    if (mx >= p.x && mx <= p.x + PKG_W && my >= p.y && my <= p.y + PKG_H) {
+      selectedIdx = i;
+      divertPackage(p);
+      return;
+    }
+  }
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('gameScreen').classList.contains('active')) return;
+
+  const beltPkgs = packages.filter(p => p.phase === 'belt');
+  if (!beltPkgs.length) return;
+
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+    // Select next (rightmost = newest)
+    selectedIdx = Math.min(selectedIdx + 1, packages.length - 1);
+    e.preventDefault();
+  } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+    selectedIdx = Math.max(selectedIdx - 1, 0);
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+    e.preventDefault();
+    // Divert currently selected, or rightmost belt package
+    let target = null;
+    if (selectedIdx >= 0 && selectedIdx < packages.length && packages[selectedIdx].phase === 'belt') {
+      target = packages[selectedIdx];
+    } else {
+      // find rightmost belt package
+      target = beltPkgs.reduce((a,b) => b.x > a.x ? b : a);
+    }
+    if (target) divertPackage(target);
+  }
+});
+
+// ══════════════════════════════════════════
+//  HUD + FEEDBACK
+// ══════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('scoreDisplay').textContent = score;
+  const td = document.getElementById('timerDisplay');
+  td.textContent = timeLeft;
+  td.classList.toggle('urgent', timeLeft <= 10);
+}
+
+function showFeedback(x, y, text, color) {
+  const pop = document.createElement('div');
+  pop.className = 'feedback-pop';
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width / W;
+  const scaleY = rect.height / H;
+  pop.style.cssText = `left:${rect.left + x * scaleX}px;top:${rect.top + y * scaleY}px;color:${color};`;
+  pop.textContent = text;
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 900);
+
+  const fb = document.getElementById('hudFeedback');
+  fb.textContent = text;
+  fb.style.color = color;
+  setTimeout(() => { if (fb.textContent === text) fb.textContent = ''; }, 1200);
+}
+
+// ══════════════════════════════════════════
+//  SCREEN NAV
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goTitle() {
+  clearInterval(gameTimer); clearTimeout(spawnTimer);
+  if (rafId) cancelAnimationFrame(rafId);
+  packages = [];
+  showScreen('titleScreen');
+}
+
+// ══════════════════════════════════════════
+//  END GAME
+// ══════════════════════════════════════════
+function endGame() {
+  clearInterval(gameTimer); clearTimeout(spawnTimer);
+  if (rafId) cancelAnimationFrame(rafId);
+
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent = wrong;
+  document.getElementById('statMissed').textContent = missed;
+
+  const total = correct + wrong + missed;
+  const acc = total > 0 ? Math.round(correct / total * 100) : 0;
+  let grade = '';
+  if (acc >= 90) grade = '🏆 Master Sorter! Flawless accuracy!';
+  else if (acc >= 75) grade = '⭐ Sharp Eye! Excellent work!';
+  else if (acc >= 55) grade = '📦 Good hustle — keep sorting!';
+  else grade = '🔧 Keep practicing the suffix rules!';
+
+  document.getElementById('finalGrade').textContent = grade;
+  showScreen('endScreen');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+resizeCanvas();
+// Spawn one package immediately for preview
+spawnPackage();
+// Idle draw loop on title screen
+function idleDraw() {
+  if (!document.getElementById('gameScreen').classList.contains('active')) {
+    resizeCanvas();
+    beltOffset -= 1.2;
+    draw();
+    requestAnimationFrame(idleDraw);
+  }
+}
+idleDraw();
+</script>
+</body>
+</html>
