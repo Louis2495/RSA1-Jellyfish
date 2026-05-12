@@ -324,15 +324,7 @@ input[type=range]::-webkit-slider-thumb:hover {
   flex-shrink:0;
   position:relative; z-index:50;
 }
-.hud-right {
-  display:flex; align-items:center; gap:8px; margin-left:auto;
-}
-.hud-divider {
-  width:1px; height:30px;
-  background: var(--belt-edge);
-  opacity:0.5;
-}
-.hud-group { display:flex; flex-direction:column; align-items:center; min-width:70px; }
+.hud-group { display:flex; flex-direction:column; align-items:center; min-width:90px; }
 .hud-lbl {
   font-family:'Share Tech Mono', monospace;
   font-size:0.55rem; letter-spacing:0.25em; text-transform:uppercase;
@@ -351,8 +343,7 @@ input[type=range]::-webkit-slider-thumb:hover {
   font-size:0.75rem;
   letter-spacing:0.1em;
   min-height:18px;
-  flex:1;
-  text-align:left;
+  text-align:center;
 }
 
 /* Warehouse canvas area */
@@ -517,17 +508,16 @@ canvas#gameCanvas {
 <!-- ══ GAME SCREEN ══ -->
 <div class="screen" id="gameScreen">
   <div class="hud">
-    <div class="hud-feedback" id="hudFeedback"></div>
-    <div class="hud-right">
-      <div class="hud-group">
-        <div class="hud-lbl">Score</div>
-        <div class="hud-val" id="scoreDisplay">0</div>
-      </div>
-      <div class="hud-divider"></div>
-      <div class="hud-group">
-        <div class="hud-lbl">Time</div>
-        <div class="hud-val" id="timerDisplay">90</div>
-      </div>
+    <div class="hud-group">
+      <div class="hud-lbl">Score</div>
+      <div class="hud-val" id="scoreDisplay">0</div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-feedback" id="hudFeedback"></div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-lbl">Time</div>
+      <div class="hud-val" id="timerDisplay">90</div>
     </div>
   </div>
   <div class="warehouse">
@@ -755,25 +745,27 @@ function update(dt) {
 
     if (p.phase === 'diverting') {
       p.divProgress += dt * 1.8;
-      const kneeX = FORK_X + Math.round(W * 0.11);
-      const topY  = CHUTE_Y;
+      const chuteX  = FORK_X + Math.round(W * 0.10);
+      const chuteBot = Math.round(H * 0.42);
       if (p.divProgress >= 1) {
         p.divProgress = 1;
         p.phase = 'chute';
-        p.x = kneeX - PKG_W / 2;
-        p.y = topY;
+        p.x = chuteX - PKG_W/2;
+        p.y = CHUTE_Y;
       } else {
         const t = p.divProgress;
         const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-        const cx = kneeX;
-        const cy = p.divY - H * 0.20;
-        p.x = bezierX(p.divX, cx, kneeX - PKG_W/2, ease);
-        p.y = bezierY(p.divY, cy, topY, ease);
+        const cx = chuteX;
+        const cy = p.divY - H * 0.18;
+        p.x = bezierX(p.divX, cx, chuteX - PKG_W/2, ease);
+        p.y = bezierY(p.divY, cy, CHUTE_Y, ease);
       }
     }
 
     if (p.phase === 'chute') {
-      p.y -= SPEED_PX_PER_SEC[gameSpeed] * 0.5 * dt;
+      // Move upward on vertical chute — actually packages sit on chute and slide off top
+      // Slide up slowly (chute goes upward)
+      p.y -= beltSpeed * 0.5 * dt;
       if (p.y + PKG_H < 0) {
         packages.splice(i, 1);
         if (selectedIdx >= packages.length) selectedIdx = packages.length - 1;
@@ -868,159 +860,124 @@ function drawMainBelt() {
 }
 
 function drawChuteTrack() {
-  const railW  = 5;
-  const chuteW = Math.round(BELT_H * 0.78); // width of the chute belt
+  const railW = 5;   // rail thickness
+  const bW = BELT_H; // use full main belt height as chute width for consistent thickness
 
-  // ── Geometry ──
-  // The chute starts at FORK_X on the main belt and goes:
-  //   1. Diagonally up-right to a "knee" point
-  //   2. Then straight up to the top
-  //
-  // All points describe the OUTER edges of the full chute structure.
-  // We draw it as ONE polygon so there is zero gap anywhere.
+  // Key geometry points:
+  // Main belt top rail  Y = BELT_Y - railW
+  // Main belt bot rail  Y = BELT_Y + BELT_H + railW
+  // Fork point on main belt: x = FORK_X, vertically centered
+  // Chute is vertical, right of FORK_X
+  const chuteX  = FORK_X + Math.round(W * 0.10); // center x of vertical chute
+  const chuteW  = Math.round(BELT_H * 0.82);      // width of vertical chute belt
+  const chuteTop = CHUTE_Y;
+  const chuteBot = Math.round(H * 0.42);          // bottom of vertical chute = joins main belt region
 
-  const kneeX  = FORK_X + Math.round(W * 0.11); // center-x where diagonal meets vertical
-  const kneeY  = Math.round(H * 0.40);           // y where diagonal ends, vertical begins
-  const topY   = CHUTE_Y;                         // very top of vertical section
-  const half   = chuteW / 2;
+  // ── 1. Draw the vertical chute belt surface ──
+  drawBeltSurface(chuteX - chuteW/2, chuteTop, chuteW, chuteBot - chuteTop, beltOffset * 0.8);
+  drawRoller(chuteX, chuteTop + chuteW/2, chuteW * 0.6);  // top roller
 
-  // The four "spine" points of the chute centerline:
-  //   A = fork on main belt   (FORK_X, BELT_Y + BELT_H/2)
-  //   B = knee                (kneeX, kneeY)
-  //   C = top                 (kneeX, topY)
-  //
-  // We offset each segment perpendicularly by `half` to get left/right edges.
+  // ── 2. Draw the diagonal connector as a filled polygon ──
+  // We connect: main belt right-edge rail (at FORK_X) → vertical chute left edge (at chuteBot)
+  // The four corners of the diagonal "arm":
+  //   TL = top of main belt rail at fork  (FORK_X, BELT_Y - railW)
+  //   TR = top-right of vertical chute    (chuteX - chuteW/2, chuteBot)
+  //   BR = bottom-right of vertical chute (chuteX + chuteW/2 - chuteW*0.05, chuteBot + chuteW*0.05)  ← slight taper
+  //   BL = bottom of main belt rail at fork (FORK_X, BELT_Y + BELT_H + railW)
 
-  // Diagonal segment A→B direction
-  const diagDX = kneeX - FORK_X;
-  const diagDY = kneeY - (BELT_Y + BELT_H / 2);
-  const diagLen = Math.hypot(diagDX, diagDY);
-  const dNx = -diagDY / diagLen; // left-normal
-  const dNy =  diagDX / diagLen;
+  const mTopY = BELT_Y - railW;
+  const mBotY = BELT_Y + BELT_H + railW;
+  const cLX = chuteX - chuteW/2;
+  const cRX = chuteX + chuteW/2;
 
-  // Diagonal left-edge points (offset by +half in left-normal direction)
-  const diagTopL  = { x: FORK_X  + dNx * half, y: (BELT_Y + BELT_H/2) + dNy * half };
-  const diagTopR  = { x: FORK_X  - dNx * half, y: (BELT_Y + BELT_H/2) - dNy * half };
-  const diagBotL  = { x: kneeX   + dNx * half, y: kneeY                + dNy * half };
-  const diagBotR  = { x: kneeX   - dNx * half, y: kneeY                - dNy * half };
-
-  // Vertical segment B→C: left = kneeX - half, right = kneeX + half
-  const vertL = kneeX - half;
-  const vertR = kneeX + half;
-
-  // ── Draw the full belt body as one polygon ──
-  // Trace: right side top → right side down diagonal → fork bottom → fork top → left side up diagonal → left side top → close
+  // Fill the diagonal body
   ctx.save();
-
-  // Full shape (belt surface color)
   ctx.beginPath();
-  ctx.moveTo(vertR, topY);         // top-right of vertical
-  ctx.lineTo(diagBotR.x, diagBotR.y); // right edge of diagonal at knee
-  ctx.lineTo(diagTopR.x, diagTopR.y); // right edge of diagonal at fork
-  ctx.lineTo(diagTopL.x, diagTopL.y); // left edge of diagonal at fork
-  ctx.lineTo(diagBotL.x, diagBotL.y); // left edge of diagonal at knee
-  ctx.lineTo(vertL, topY);         // top-left of vertical
+  ctx.moveTo(FORK_X, mTopY);
+  ctx.lineTo(cLX, chuteBot);
+  ctx.lineTo(cRX, chuteBot);
+  ctx.lineTo(FORK_X, mBotY);
   ctx.closePath();
   ctx.fillStyle = '#3d2e14';
   ctx.fill();
 
-  // ── Belt segment lines (clipped to shape) ──
+  // Clip to that polygon for belt segments
   ctx.beginPath();
-  ctx.moveTo(vertR, topY);
-  ctx.lineTo(diagBotR.x, diagBotR.y);
-  ctx.lineTo(diagTopR.x, diagTopR.y);
-  ctx.lineTo(diagTopL.x, diagTopL.y);
-  ctx.lineTo(diagBotL.x, diagBotL.y);
-  ctx.lineTo(vertL, topY);
+  ctx.moveTo(FORK_X, mTopY);
+  ctx.lineTo(cLX, chuteBot);
+  ctx.lineTo(cRX, chuteBot);
+  ctx.lineTo(FORK_X, mBotY);
   ctx.closePath();
   ctx.clip();
 
-  // Draw belt-segment marks along the chute path
-  const segSpacing = 40;
-  const offset = (beltOffset * 0.8 % segSpacing + segSpacing) % segSpacing;
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  // Belt segments (diagonal direction)
+  const diagDX = chuteX - FORK_X;
+  const diagDY = chuteBot - (BELT_Y + BELT_H/2);
+  const diagLen = Math.hypot(diagDX, diagDY);
+  const diagAngle = Math.atan2(diagDY, diagDX);
+  const segW = 40;
+  const off = (beltOffset * 0.8 % segW + segW) % segW;
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
   ctx.lineWidth = 2;
-
-  // Diagonal segment marks (perpendicular to diagonal direction)
-  const pNx = -dNy, pNy = dNx; // along-diagonal normal
-  for (let s = -segSpacing + offset; s < diagLen + segSpacing; s += segSpacing) {
-    const mx = FORK_X + (diagDX / diagLen) * s;
-    const my = (BELT_Y + BELT_H/2) + (diagDY / diagLen) * s;
+  for (let s = -segW + off; s < diagLen + segW; s += segW) {
+    const sx = FORK_X + Math.cos(diagAngle) * s;
+    const sy = (BELT_Y + BELT_H/2) + Math.sin(diagAngle) * s;
+    // perpendicular lines across the belt
+    const px = -Math.sin(diagAngle) * bW;
+    const py =  Math.cos(diagAngle) * bW;
     ctx.beginPath();
-    ctx.moveTo(mx - dNx * half * 1.2, my - dNy * half * 1.2);
-    ctx.lineTo(mx + dNx * half * 1.2, my + dNy * half * 1.2);
-    ctx.stroke();
-  }
-
-  // Vertical segment marks
-  const vertLen = kneeY - topY;
-  for (let s = -segSpacing + offset; s < vertLen + segSpacing; s += segSpacing) {
-    const my = kneeY - s;
-    ctx.beginPath();
-    ctx.moveTo(vertL - 4, my);
-    ctx.lineTo(vertR + 4, my);
+    ctx.moveTo(sx - px, sy - py);
+    ctx.lineTo(sx + px, sy + py);
     ctx.stroke();
   }
 
   ctx.restore();
 
-  // ── Rail lines along all outer edges ──
+  // Rail lines along the diagonal edges (drawn as thick lines, no clipping needed)
   ctx.save();
   ctx.lineWidth = railW;
   ctx.strokeStyle = '#6b4f1c';
-  ctx.lineJoin = 'round';
-
-  // Right-side rail: fork → knee → top
+  // Top-left edge of diagonal
   ctx.beginPath();
-  ctx.moveTo(diagTopR.x, diagTopR.y);
-  ctx.lineTo(diagBotR.x, diagBotR.y);
-  ctx.lineTo(vertR, topY);
+  ctx.moveTo(FORK_X, mTopY);
+  ctx.lineTo(cLX, chuteBot);
   ctx.stroke();
-
-  // Left-side rail: fork → knee → top
+  // Bottom-right edge of diagonal
   ctx.beginPath();
-  ctx.moveTo(diagTopL.x, diagTopL.y);
-  ctx.lineTo(diagBotL.x, diagBotL.y);
-  ctx.lineTo(vertL, topY);
+  ctx.moveTo(FORK_X, mBotY);
+  ctx.lineTo(cRX, chuteBot);
   ctx.stroke();
-
-  // Top cap
-  ctx.beginPath();
-  ctx.moveTo(vertL, topY);
-  ctx.lineTo(vertR, topY);
-  ctx.stroke();
-
   ctx.restore();
 
-  // ── Inner highlight along top-left edge ──
+  // Edge highlights (inner glow lines)
   ctx.save();
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 3;
   ctx.strokeStyle = '#5c4520';
   ctx.beginPath();
-  ctx.moveTo(diagTopL.x + 2, diagTopL.y + 2);
-  ctx.lineTo(diagBotL.x + 2, diagBotL.y + 1);
-  ctx.lineTo(vertL + 2, topY + 2);
+  ctx.moveTo(FORK_X + 1, mTopY + 3);
+  ctx.lineTo(cLX + 1, chuteBot - 2);
   ctx.stroke();
   ctx.restore();
 
-  // ── Rollers ──
-  drawRoller(FORK_X, BELT_Y + BELT_H/2, BELT_H * 0.55);   // at fork on main belt
-  drawRoller(kneeX, kneeY, chuteW * 0.55);                  // at the knee/bend
-  drawRoller(kneeX, topY + chuteW * 0.3, chuteW * 0.55);   // at the top
+  // Junction roller at the bottom of vertical chute (connects to diagonal)
+  drawRoller(chuteX, chuteBot, chuteW * 0.6);
+  // Junction roller at fork on main belt
+  drawRoller(FORK_X, BELT_Y + BELT_H/2, BELT_H * 0.55);
 
-  // ── Labels ──
+  // Chute label
   ctx.save();
   ctx.font = `bold 11px 'Share Tech Mono', monospace`;
-  ctx.fillStyle = 'rgba(78,203,113,0.8)';
+  ctx.fillStyle = 'rgba(78,203,113,0.7)';
   ctx.textAlign = 'center';
-  ctx.fillText('SUFFIX CHUTE', kneeX, topY - 10);
+  ctx.fillText('SUFFIX CHUTE', chuteX, chuteTop - 10);
   ctx.restore();
 
+  // Arrow sign at fork
   ctx.save();
-  ctx.font = `bold 11px 'Share Tech Mono', monospace`;
+  ctx.font = `bold 12px 'Share Tech Mono', monospace`;
   ctx.fillStyle = 'rgba(232,160,32,0.65)';
   ctx.textAlign = 'center';
-  ctx.fillText('↗ SUFFIX', FORK_X - 12, BELT_Y - 14);
+  ctx.fillText('↗ SUFFIX', FORK_X - 10, BELT_Y - 14);
   ctx.restore();
 }
 
@@ -1120,29 +1077,33 @@ function drawBox(p, isSelected) {
   ctx.fillRect(x + r, y + h*0.32, w - r*2, 6);
   ctx.fillRect(x + r, y + h*0.62, w - r*2, 6);
 
-  // Word text — black, crisp, no blur, no shadow
+  // Word text — crisp, no blur, dark backing for contrast
+  // Disable ALL shadows before text (shadows cause blurry edges)
   ctx.shadowBlur = 0;
   ctx.shadowColor = 'transparent';
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
 
-  const fontSize = Math.round(Math.max(12, Math.min(16, PKG_W / (p.word.length * 0.6))));
-  ctx.font = `bold ${fontSize}px 'Black Ops One', sans-serif`;
+  const fontSize = Math.max(12, Math.min(15, PKG_W / (p.word.length * 0.65)));
+  ctx.font = `bold ${Math.round(fontSize)}px 'Black Ops One', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const textW = ctx.measureText(p.word).width;
   const padX = 10, padY = 6;
   const tx = Math.round(x + w/2 - textW/2 - padX);
   const ty = Math.round(y + h/2 - fontSize/2 - padY);
-  // Bright backing panel
+  // Solid dark backing panel
   ctx.fillStyle = p.flash
-    ? (p.flash.color === 'green' ? '#c8ffc8' : '#ffc8c8')
-    : '#f5e8c0';
+    ? (p.flash.color === 'green' ? '#0a1e0a' : '#1e0a0a')
+    : '#1a1208';
   roundRect(ctx, tx, ty, Math.round(textW + padX*2), Math.round(fontSize + padY*2), 3);
   ctx.fill();
 
-  // Black text — maximum contrast
-  ctx.fillStyle = '#111111';
+  // Plain white-ish text, no shadow at all
+  ctx.fillStyle = p.flash
+    ? (p.flash.color === 'green' ? '#c8ffc8' : '#ffc8c8')
+    : '#f0e8d0';
+  // Draw at pixel-snapped position
   ctx.fillText(p.word, Math.round(x + w/2), Math.round(y + h/2));
 
   ctx.restore();
